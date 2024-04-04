@@ -14,7 +14,6 @@ final class MovieQuizViewController: UIViewController {
         image.layer.cornerRadius = 20
         image.contentMode = .scaleAspectFill
         image.layer.masksToBounds = true
-        image.layer.borderWidth = 8
         image.backgroundColor = UIColor.ypWhite
         image.translatesAutoresizingMaskIntoConstraints = false
         return image
@@ -76,12 +75,18 @@ final class MovieQuizViewController: UIViewController {
         startGame()
     }
     
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
+    
     @objc private func yesButtonClicked() {
-        showAnswerResult(isCorrect: questions[currentQuestionIndex].correctAnswer)
+            showAnswerResult(isCorrect: questions[currentQuestionIndex].correctAnswer)
+            yesButton.isEnabled = false
     }
     
     @objc private func noButtonClicked() {
-        showAnswerResult(isCorrect: !questions[currentQuestionIndex].correctAnswer)
+            showAnswerResult(isCorrect: !questions[currentQuestionIndex].correctAnswer)
+            noButton.isEnabled = false
     }
 }
 
@@ -109,6 +114,7 @@ private extension MovieQuizViewController {
         if isCorrect {
             correctAnswers += 1
         }
+        previewImage.layer.borderWidth = 8
         previewImage.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
@@ -117,6 +123,9 @@ private extension MovieQuizViewController {
     }
     
     func showNextQuestionOrResults() {
+        previewImage.layer.borderWidth = 0
+        yesButton.isEnabled = true
+        noButton.isEnabled = true
         
         if currentQuestionIndex == questions.count - 1 {
             endGame(correctAnswers: correctAnswers)
@@ -133,7 +142,6 @@ private extension MovieQuizViewController {
     
     func setupGame(with model: QuizQuestion) {
         counterLabel.text = "\(currentQuestionIndex + 1)/\(questions.count)"
-        previewImage.layer.borderColor = .none
         previewImage.image = UIImage(named: model.image) ?? UIImage()
         questionLabel.text = model.questionText
     }
@@ -145,16 +153,11 @@ private extension MovieQuizViewController {
         view.backgroundColor = UIColor.ypBlack
         view.addSubview(mainVerticalStackView)
         
-        mainVerticalStackView.addArrangedSubview(labelsStackView)
-        mainVerticalStackView.addArrangedSubview(previewImage)
-        mainVerticalStackView.addArrangedSubview(questionLabel)
-        mainVerticalStackView.addArrangedSubview(buttonsStackView)
+        [labelsStackView, previewImage, questionLabel, buttonsStackView].forEach { mainVerticalStackView.addArrangedSubview($0) }
         
-        labelsStackView.addArrangedSubview(questionTitleLabel)
-        labelsStackView.addArrangedSubview(counterLabel)
+        [questionTitleLabel, counterLabel].forEach { labelsStackView.addArrangedSubview($0) }
         
-        buttonsStackView.addArrangedSubview(noButton)
-        buttonsStackView.addArrangedSubview(yesButton)
+        [noButton, yesButton].forEach { buttonsStackView.addArrangedSubview($0) }
     }
     
     func setConstraints() {
