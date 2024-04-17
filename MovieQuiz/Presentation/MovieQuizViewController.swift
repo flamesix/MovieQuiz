@@ -47,32 +47,25 @@ final class MovieQuizViewController: UIViewController {
     }()
     
     // MARK: - Properties
-    private let questions: [QuizQuestion] = [
-        QuizQuestion(image: "The Godfather", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-        QuizQuestion(image: "The Dark Knight", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-        QuizQuestion(image: "Kill Bill", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-        QuizQuestion(image: "The Avengers", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-        QuizQuestion(image: "Deadpool", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-        QuizQuestion(image: "The Green Knight", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-        QuizQuestion(image: "Old", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-        QuizQuestion(image: "The Ice Age Adventures of Buck Wild", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-        QuizQuestion(image: "Tesla", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-        QuizQuestion(image: "Vivarium", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-    ]
     
     private var currentQuestionIndex = 0
     private var correctAnswers = 0
-    
+    private let questionsAmount: Int = 10
+    private var questionFactory: QuestionFactoryProtocol?
+    private var currentQuestion: QuizQuestion?
+    private var statisticService: StatisticService?
     
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        statisticService = StatisticServiceImplementation()
         setupView()
         setConstraints()
         setButtonTarget()
         
         startGame()
+
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -80,34 +73,51 @@ final class MovieQuizViewController: UIViewController {
     }
     
     @objc private func yesButtonClicked() {
-            showAnswerResult(isCorrect: questions[currentQuestionIndex].correctAnswer)
-            yesButton.isEnabled = false
+        guard let currentQuestion else { return }
+        showAnswerResult(isCorrect: currentQuestion.correctAnswer)
+        yesButton.isEnabled = false
     }
     
     @objc private func noButtonClicked() {
-            showAnswerResult(isCorrect: !questions[currentQuestionIndex].correctAnswer)
-            noButton.isEnabled = false
+        guard let currentQuestion else { return }
+        showAnswerResult(isCorrect: !currentQuestion.correctAnswer)
+        noButton.isEnabled = false
     }
 }
 
 // MARK: - Game Logic
 private extension MovieQuizViewController {
+    
     func startGame() {
-        let question = questions[currentQuestionIndex]
-        setupGame(with: question)
+        let questionFactory = QuestionFactory()
+        questionFactory.delegate = self
+        self.questionFactory = questionFactory
+        
+        questionFactory.requestNextQuestion()
     }
     
     func endGame(correctAnswers: Int) {
-        let alert = UIAlertController(title: "Раунд окончен", message: "Ваш результат: \(correctAnswers)/10", preferredStyle: .alert)
         
-        let action = UIAlertAction(title: "Сыграть ещё раз", style: .default) { [weak self] _ in
+        guard let statisticService else { return }
+        
+        statisticService.store(correct: correctAnswers, total: questionsAmount)
+        
+        let alertModel = AlertModel(title: "Этот раунд окончен!",
+                                    message: """
+                                            Ваш результат: \(correctAnswers)/\(questionsAmount)
+                                            Количество сыгранных квизов: \(statisticService.gamesCount)
+                                            Рекорд: \(statisticService.bestGame.correct)/\(statisticService.bestGame.total) (\(statisticService.bestGame.date.dateTimeString))
+                                            Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%
+                                            """,
+                                    buttonText: "Сыграть ещё раз") { [weak self] in
+            
             self?.currentQuestionIndex = 0
             self?.correctAnswers = 0
             self?.startGame()
         }
         
-        alert.addAction(action)
-        present(alert, animated: true)
+        let alertPresenter = AlertPresenter(alertModel: alertModel)
+        alertPresenter.showAlert(viewController: self)    
     }
     
     func showAnswerResult(isCorrect: Bool) {
@@ -127,7 +137,7 @@ private extension MovieQuizViewController {
         yesButton.isEnabled = true
         noButton.isEnabled = true
         
-        if currentQuestionIndex == questions.count - 1 {
+        if currentQuestionIndex == questionsAmount - 1 {
             endGame(correctAnswers: correctAnswers)
             
         } else {
@@ -137,11 +147,22 @@ private extension MovieQuizViewController {
     }
 }
 
+// MARK: - QuestionFactoryDelegate
+
+extension MovieQuizViewController: QuestionFactoryDelegate {
+    
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question else { return }
+        currentQuestion = question
+        setupGame(with: question)
+    }
+}
+
 // MARK: - Game Preparations
 private extension MovieQuizViewController {
     
     func setupGame(with model: QuizQuestion) {
-        counterLabel.text = "\(currentQuestionIndex + 1)/\(questions.count)"
+        counterLabel.text = "\(currentQuestionIndex + 1)/\(questionsAmount)"
         previewImage.image = UIImage(named: model.image) ?? UIImage()
         questionLabel.text = model.questionText
     }
