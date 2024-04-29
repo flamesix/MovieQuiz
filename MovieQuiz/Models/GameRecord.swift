@@ -13,7 +13,6 @@ struct GameRecord: Codable {
     var date: Date
     
     func isBetter(_ count: Int) -> Bool {
-//        correct < another.correct || total == 0
         correct < count
     }
 }
