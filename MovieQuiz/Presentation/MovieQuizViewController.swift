@@ -74,9 +74,6 @@ final class MovieQuizViewController: UIViewController {
         setButtonTarget()
         
         startGame()
-        
-//        k_zcuw1ytf
-
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -123,7 +120,6 @@ private extension MovieQuizViewController {
     func startGame() {
         activityIndicator.startAnimating()
         let questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
-       // questionFactory.delegate = self
         self.questionFactory = questionFactory
         questionFactory.loadData()
         questionFactory.requestNextQuestion()
