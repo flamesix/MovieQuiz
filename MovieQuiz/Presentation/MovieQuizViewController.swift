@@ -46,6 +46,15 @@ final class MovieQuizViewController: UIViewController {
         return stack
     }()
     
+    private let activityIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView()
+        indicator.style = .large
+        indicator.color = .ypGray
+        indicator.hidesWhenStopped = true
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        return indicator
+    }()
+    
     // MARK: - Properties
     
     private var currentQuestionIndex = 0
@@ -65,6 +74,8 @@ final class MovieQuizViewController: UIViewController {
         setButtonTarget()
         
         startGame()
+        
+//        k_zcuw1ytf
 
     }
     
@@ -83,16 +94,38 @@ final class MovieQuizViewController: UIViewController {
         showAnswerResult(isCorrect: !currentQuestion.correctAnswer)
         noButton.isEnabled = false
     }
+    
+    private func showLoadingIndicator() {
+        activityIndicator.startAnimating()
+    }
+    
+    private func showNetworkError(message: String) {
+        
+        let alertModel = AlertModel(title: "Ошибка",
+                               message: message,
+                               buttonText: "Попробовать еще раз") { [weak self] in
+            guard let self = self else { return }
+            
+            self.currentQuestionIndex = 0
+            self.correctAnswers = 0
+            
+            self.questionFactory?.requestNextQuestion()
+        }
+        
+        let alertPresenter = AlertPresenter(alertModel: alertModel)
+        alertPresenter.showAlert(viewController: self)
+    }
 }
 
 // MARK: - Game Logic
 private extension MovieQuizViewController {
     
     func startGame() {
-        let questionFactory = QuestionFactory()
-        questionFactory.delegate = self
+        activityIndicator.startAnimating()
+        let questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+       // questionFactory.delegate = self
         self.questionFactory = questionFactory
-        
+        questionFactory.loadData()
         questionFactory.requestNextQuestion()
     }
     
@@ -156,6 +189,15 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         currentQuestion = question
         setupGame(with: question)
     }
+    
+    func didLoadDataFromServer() {
+        activityIndicator.stopAnimating()
+        questionFactory?.requestNextQuestion()
+    }
+    
+    func didFailToLoadData(with error: any Error) {
+        showNetworkError(message: error.localizedDescription)
+    }
 }
 
 // MARK: - Game Preparations
@@ -163,7 +205,8 @@ private extension MovieQuizViewController {
     
     func setupGame(with model: QuizQuestion) {
         counterLabel.text = "\(currentQuestionIndex + 1)/\(questionsAmount)"
-        previewImage.image = UIImage(named: model.image) ?? UIImage()
+//        previewImage.image = UIImage(named: model.image) ?? UIImage()
+        previewImage.image = UIImage(data: model.image)
         questionLabel.text = model.questionText
     }
 }
@@ -172,7 +215,7 @@ private extension MovieQuizViewController {
 private extension MovieQuizViewController {
     func setupView() {
         view.backgroundColor = UIColor.ypBlack
-        view.addSubview(mainVerticalStackView)
+        view.addSubviews(mainVerticalStackView, activityIndicator)
         
         [labelsStackView, previewImage, questionLabel, buttonsStackView].forEach { mainVerticalStackView.addArrangedSubview($0) }
         
@@ -183,6 +226,9 @@ private extension MovieQuizViewController {
     
     func setConstraints() {
         NSLayoutConstraint.activate([
+            
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             
             mainVerticalStackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
             mainVerticalStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
