@@ -15,7 +15,6 @@ final class MovieQuizViewController: UIViewController {
         image.contentMode = .scaleAspectFill
         image.layer.masksToBounds = true
         image.backgroundColor = UIColor.ypWhite
-        image.translatesAutoresizingMaskIntoConstraints = false
         return image
     }()
     
@@ -24,7 +23,6 @@ final class MovieQuizViewController: UIViewController {
         stack.spacing = 20
         stack.distribution = .fill
         stack.axis = .vertical
-        stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
     
@@ -33,7 +31,6 @@ final class MovieQuizViewController: UIViewController {
         stack.distribution = .fill
         stack.alignment = .fill
         stack.axis = .horizontal
-        stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
     
@@ -42,8 +39,15 @@ final class MovieQuizViewController: UIViewController {
         stack.spacing = 20
         stack.distribution = .fillEqually
         stack.axis = .horizontal
-        stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
+    }()
+    
+    private let activityIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView()
+        indicator.style = .large
+        indicator.color = .ypGray
+        indicator.hidesWhenStopped = true
+        return indicator
     }()
     
     // MARK: - Properties
@@ -53,19 +57,18 @@ final class MovieQuizViewController: UIViewController {
     private let questionsAmount: Int = 10
     private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
-    private var statisticService: StatisticService?
+    private var statisticService: StatisticServiceProtocol?
     
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        statisticService = StatisticServiceImplementation()
+        statisticService = StatisticService()
         setupView()
         setConstraints()
         setButtonTarget()
         
         startGame()
-
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -83,16 +86,37 @@ final class MovieQuizViewController: UIViewController {
         showAnswerResult(isCorrect: !currentQuestion.correctAnswer)
         noButton.isEnabled = false
     }
+    
+    private func showLoadingIndicator() {
+        activityIndicator.startAnimating()
+    }
+    
+    private func showNetworkError(message: String) {
+        
+        let alertModel = AlertModel(title: "Ошибка",
+                               message: message,
+                               buttonText: "Попробовать еще раз") { [weak self] in
+            guard let self = self else { return }
+            
+            self.currentQuestionIndex = 0
+            self.correctAnswers = 0
+            
+            self.questionFactory?.requestNextQuestion()
+        }
+        
+        let alertPresenter = AlertPresenter(alertModel: alertModel)
+        alertPresenter.showAlert(viewController: self)
+    }
 }
 
 // MARK: - Game Logic
 private extension MovieQuizViewController {
     
     func startGame() {
-        let questionFactory = QuestionFactory()
-        questionFactory.delegate = self
+        activityIndicator.startAnimating()
+        let questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
         self.questionFactory = questionFactory
-        
+        questionFactory.loadData()
         questionFactory.requestNextQuestion()
     }
     
@@ -156,6 +180,15 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         currentQuestion = question
         setupGame(with: question)
     }
+    
+    func didLoadDataFromServer() {
+        activityIndicator.stopAnimating()
+        questionFactory?.requestNextQuestion()
+    }
+    
+    func didFailToLoadData(with error: any Error) {
+        showNetworkError(message: error.localizedDescription)
+    }
 }
 
 // MARK: - Game Preparations
@@ -163,7 +196,7 @@ private extension MovieQuizViewController {
     
     func setupGame(with model: QuizQuestion) {
         counterLabel.text = "\(currentQuestionIndex + 1)/\(questionsAmount)"
-        previewImage.image = UIImage(named: model.image) ?? UIImage()
+        previewImage.image = UIImage(data: model.image)
         questionLabel.text = model.questionText
     }
 }
@@ -172,7 +205,7 @@ private extension MovieQuizViewController {
 private extension MovieQuizViewController {
     func setupView() {
         view.backgroundColor = UIColor.ypBlack
-        view.addSubview(mainVerticalStackView)
+        view.addSubviews(mainVerticalStackView, activityIndicator)
         
         [labelsStackView, previewImage, questionLabel, buttonsStackView].forEach { mainVerticalStackView.addArrangedSubview($0) }
         
@@ -183,6 +216,9 @@ private extension MovieQuizViewController {
     
     func setConstraints() {
         NSLayoutConstraint.activate([
+            
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             
             mainVerticalStackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
             mainVerticalStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
@@ -201,67 +237,3 @@ private extension MovieQuizViewController {
         noButton.addTarget(self, action: #selector(noButtonClicked), for: .touchUpInside)
     }
 }
-
-/*
- Mock-данные
- 
- 
- Картинка: The Godfather
- Настоящий рейтинг: 9,2
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: The Dark Knight
- Настоящий рейтинг: 9
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: Kill Bill
- Настоящий рейтинг: 8,1
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: The Avengers
- Настоящий рейтинг: 8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: Deadpool
- Настоящий рейтинг: 8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: The Green Knight
- Настоящий рейтинг: 6,6
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: ДА
- 
- 
- Картинка: Old
- Настоящий рейтинг: 5,8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- 
- 
- Картинка: The Ice Age Adventures of Buck Wild
- Настоящий рейтинг: 4,3
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- 
- 
- Картинка: Tesla
- Настоящий рейтинг: 5,1
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- 
- 
- Картинка: Vivarium
- Настоящий рейтинг: 5,8
- Вопрос: Рейтинг этого фильма больше чем 6?
- Ответ: НЕТ
- */
