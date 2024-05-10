@@ -3,14 +3,15 @@ import UIKit
 final class MovieQuizViewController: UIViewController {
     
     // MARK: - UIProperties
-    private let yesButton = MQButton(title: "Да")
-    private let noButton = MQButton(title: "Нет")
-    private let questionTitleLabel = MQLabel(labelText: "Вопрос:", fontSize: 20, alignment: .left, fontStyle: .medium)
-    private let counterLabel = MQLabel(labelText: "10/10", fontSize: 20, alignment: .right, fontStyle: .medium)
-    private let questionLabel = MQLabel(labelText: "Рейтинг этого фильма меньше, чем 5?", fontSize: 23, alignment: .center, fontStyle: .bold)
+    private let yesButton = MQButton(title: "Да", accessibilityID: "Yes")
+    private let noButton = MQButton(title: "Нет", accessibilityID: "No")
+    private let questionTitleLabel = MQLabel(labelText: "Вопрос:", fontSize: 20, alignment: .left, fontStyle: .medium, "Question Title")
+    private let counterLabel = MQLabel(labelText: "10/10", fontSize: 20, alignment: .right, fontStyle: .medium, "Index")
+    private let questionLabel = MQLabel(labelText: "Рейтинг этого фильма меньше, чем 5?", fontSize: 23, alignment: .center, fontStyle: .bold, "Question")
     
     private let previewImage: UIImageView = {
         let image = UIImageView()
+        image.accessibilityIdentifier = "Poster"
         image.layer.cornerRadius = 20
         image.contentMode = .scaleAspectFill
         image.layer.masksToBounds = true
