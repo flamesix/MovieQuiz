@@ -1,5 +1,5 @@
 //
-//  StatisticService.swift
+//  StatisticServiceProtocol.swift
 //  MovieQuiz
 //
 //  Created by Юрий Гриневич on 14.04.2024.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol StatisticService {
+protocol StatisticServiceProtocol {
     var totalCountCorrectAnswers: Int { get }
     var totalAmountQuestions: Int { get }
     var totalAccuracy: Double { get }
@@ -16,7 +16,7 @@ protocol StatisticService {
     func store(correct count: Int, total amount: Int)
 }
 
-final class StatisticServiceImplementation: StatisticService {
+final class StatisticService: StatisticServiceProtocol {
     
     private let userDefaults = UserDefaults.standard
     

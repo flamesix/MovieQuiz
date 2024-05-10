@@ -7,25 +7,23 @@
 
 import Foundation
 
+protocol QuestionFactoryProtocol {
+    func requestNextQuestion()
+    func loadData()
+}
+
+protocol QuestionFactoryDelegate: AnyObject {
+    func didReceiveNextQuestion(question: QuizQuestion?)
+    func didLoadDataFromServer()
+    func didFailToLoadData(with error: Error)
+}
+
 final class QuestionFactory: QuestionFactoryProtocol {
     
     private let moviesLoader: MoviesLoaderProtocol
     private var movies: [MostPopularMovie] = []
     
     weak var delegate: QuestionFactoryDelegate?
-    
-    //    private let questions: [QuizQuestion] = [
-    //        QuizQuestion(image: "The Godfather", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-    //        QuizQuestion(image: "The Dark Knight", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-    //        QuizQuestion(image: "Kill Bill", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-    //        QuizQuestion(image: "The Avengers", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-    //        QuizQuestion(image: "Deadpool", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-    //        QuizQuestion(image: "The Green Knight", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
-    //        QuizQuestion(image: "Old", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-    //        QuizQuestion(image: "The Ice Age Adventures of Buck Wild", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-    //        QuizQuestion(image: "Tesla", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-    //        QuizQuestion(image: "Vivarium", questionText: "Рейтинг этого фильма больше чем 6?", correctAnswer: false),
-    //    ]
     
     init(moviesLoader: MoviesLoaderProtocol, delegate: QuestionFactoryDelegate?) {
         self.moviesLoader = moviesLoader
