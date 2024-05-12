@@ -8,16 +8,17 @@
 import UIKit
 
 protocol MovieQuizViewControllerProtocol: AnyObject {
-    var activityIndicator: UIActivityIndicatorView { get }
     func showAnswerResult(isCorrect: Bool)
     func showNextQuestionOrResults()
     func setupGame(with model: QuizQuestion)
+    func showLoadingIndicator()
+    func hideLoadingIndicator()
 }
 
 protocol MovieQuizPresenterProtocol {
     var currentQuestionIndex: Int { get set }
     var questionsAmount: Int { get }
-    init(view: MovieQuizViewControllerProtocol, statisticService: StatisticServiceProtocol)
+    init(view: MovieQuizViewControllerProtocol)
     func yesButtonClicked(viewController: MovieQuizViewControllerProtocol)
     func noButtonClicked(viewController: MovieQuizViewControllerProtocol)
     func endGame(correctAnswers: Int, viewController: MovieQuizViewControllerProtocol)
@@ -40,13 +41,13 @@ final class MovieQuizPresenter: MovieQuizPresenterProtocol {
     
     private var currentQuestion: QuizQuestion?
     
-    init(view: MovieQuizViewControllerProtocol, statisticService: StatisticServiceProtocol) {
+    init(view: MovieQuizViewControllerProtocol) {
         self.view = view
-        self.statisticService = statisticService
+        self.statisticService = StatisticService()
     }
     
     func startGame() {
-        view?.activityIndicator.startAnimating()
+        view?.showLoadingIndicator()
         let questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
         self.questionFactory = questionFactory
         questionFactory.loadData()
@@ -128,27 +129,12 @@ final class MovieQuizPresenter: MovieQuizPresenterProtocol {
         startGame()
     }
     
-    // MARK: - TODO
     func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(
             image: UIImage(data: model.image) ?? UIImage(),
             question: model.questionText,
             questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)")
     }
-
-//    private func show(quiz step: QuizStepViewModel) {
-//        imageView.layer.borderColor = UIColor.clear.cgColor
-//        imageView.image = step.image
-//        textLabel.text = step.question
-//        counterLabel.text = step.questionNumber
-//    }
-//    
-//    func setupGame(with model: QuizQuestion) {
-//        guard let presenter else { return }
-//        counterLabel.text = "\(presenter.currentQuestionIndex + 1)/\(presenter.questionsAmount)"
-//        previewImage.image = UIImage(data: model.image)
-//        questionLabel.text = model.questionText
-//    }
 }
 
 extension MovieQuizPresenter: QuestionFactoryDelegate {
@@ -160,7 +146,7 @@ extension MovieQuizPresenter: QuestionFactoryDelegate {
     }
     
     func didLoadDataFromServer() {
-        view?.activityIndicator.stopAnimating()
+        view?.hideLoadingIndicator()
         questionFactory?.requestNextQuestion()
     }
     

@@ -43,7 +43,7 @@ final class MovieQuizViewController: UIViewController {
         return stack
     }()
     
-    let activityIndicator: UIActivityIndicatorView = {
+    private let activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView()
         indicator.style = .large
         indicator.color = .ypGray
@@ -68,6 +68,14 @@ final class MovieQuizViewController: UIViewController {
         return .lightContent
     }
     
+    func showLoadingIndicator() {
+        activityIndicator.startAnimating()
+    }
+    
+    func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+    }
+    
     @objc private func yesButtonClicked() {
         presenter?.yesButtonClicked(viewController: self)
     }
@@ -77,8 +85,15 @@ final class MovieQuizViewController: UIViewController {
     }
 }
 
-// MARK: - UI Response to Game Logic
+// MARK: - Game Preparations and UI Response to Game Logic
 extension MovieQuizViewController: MovieQuizViewControllerProtocol {
+    
+    func setupGame(with model: QuizQuestion) {
+        let quiz = presenter?.convert(model: model)
+        counterLabel.text = quiz?.questionNumber
+        previewImage.image = quiz?.image
+        questionLabel.text = quiz?.question
+    }
     
     func showAnswerResult(isCorrect: Bool) {
         previewImage.layer.borderWidth = 8
@@ -89,17 +104,6 @@ extension MovieQuizViewController: MovieQuizViewControllerProtocol {
     func showNextQuestionOrResults() {
         previewImage.layer.borderWidth = 0
         [yesButton, noButton].forEach { $0.isEnabled = true }
-    }
-}
-
-// MARK: - Game Preparations
-extension MovieQuizViewController {
-    
-    func setupGame(with model: QuizQuestion) {
-        let quiz = presenter?.convert(model: model)
-        counterLabel.text = quiz?.questionNumber
-        previewImage.image = quiz?.image
-        questionLabel.text = quiz?.question
     }
 }
 
