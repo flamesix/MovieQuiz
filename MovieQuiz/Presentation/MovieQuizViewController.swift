@@ -43,7 +43,7 @@ final class MovieQuizViewController: UIViewController {
         return stack
     }()
     
-    private let activityIndicator: UIActivityIndicatorView = {
+    let activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView()
         indicator.style = .large
         indicator.color = .ypGray
@@ -52,24 +52,16 @@ final class MovieQuizViewController: UIViewController {
     }()
     
     // MARK: - Properties
-    
-    private var currentQuestionIndex = 0
-    private var correctAnswers = 0
-    private let questionsAmount: Int = 10
-    private var questionFactory: QuestionFactoryProtocol?
-    private var currentQuestion: QuizQuestion?
-    private var statisticService: StatisticServiceProtocol?
-    
+    var presenter: MovieQuizPresenterProtocol?
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        statisticService = StatisticService()
         setupView()
         setConstraints()
         setButtonTarget()
         
-        startGame()
+        presenter?.startGame()
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -77,128 +69,37 @@ final class MovieQuizViewController: UIViewController {
     }
     
     @objc private func yesButtonClicked() {
-        guard let currentQuestion else { return }
-        showAnswerResult(isCorrect: currentQuestion.correctAnswer)
-        yesButton.isEnabled = false
+        presenter?.yesButtonClicked(viewController: self)
     }
     
     @objc private func noButtonClicked() {
-        guard let currentQuestion else { return }
-        showAnswerResult(isCorrect: !currentQuestion.correctAnswer)
-        noButton.isEnabled = false
-    }
-    
-    private func showLoadingIndicator() {
-        activityIndicator.startAnimating()
-    }
-    
-    private func showNetworkError(message: String) {
-        
-        let alertModel = AlertModel(title: "Ошибка",
-                               message: message,
-                               buttonText: "Попробовать еще раз") { [weak self] in
-            guard let self = self else { return }
-            
-            self.currentQuestionIndex = 0
-            self.correctAnswers = 0
-            
-            self.questionFactory?.requestNextQuestion()
-        }
-        
-        let alertPresenter = AlertPresenter(alertModel: alertModel)
-        alertPresenter.showAlert(viewController: self)
+        presenter?.noButtonClicked(viewController: self)
     }
 }
 
-// MARK: - Game Logic
-private extension MovieQuizViewController {
-    
-    func startGame() {
-        activityIndicator.startAnimating()
-        let questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
-        self.questionFactory = questionFactory
-        questionFactory.loadData()
-        questionFactory.requestNextQuestion()
-    }
-    
-    func endGame(correctAnswers: Int) {
-        
-        guard let statisticService else { return }
-        
-        statisticService.store(correct: correctAnswers, total: questionsAmount)
-        
-        let alertModel = AlertModel(title: "Этот раунд окончен!",
-                                    message: """
-                                            Ваш результат: \(correctAnswers)/\(questionsAmount)
-                                            Количество сыгранных квизов: \(statisticService.gamesCount)
-                                            Рекорд: \(statisticService.bestGame.correct)/\(statisticService.bestGame.total) (\(statisticService.bestGame.date.dateTimeString))
-                                            Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%
-                                            """,
-                                    buttonText: "Сыграть ещё раз") { [weak self] in
-            
-            self?.currentQuestionIndex = 0
-            self?.correctAnswers = 0
-            self?.startGame()
-        }
-        
-        let alertPresenter = AlertPresenter(alertModel: alertModel)
-        alertPresenter.showAlert(viewController: self)    
-    }
+// MARK: - UI Response to Game Logic
+extension MovieQuizViewController: MovieQuizViewControllerProtocol {
     
     func showAnswerResult(isCorrect: Bool) {
-        if isCorrect {
-            correctAnswers += 1
-        }
         previewImage.layer.borderWidth = 8
         previewImage.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.showNextQuestionOrResults()
-        }
+        [yesButton, noButton].forEach { $0.isEnabled = false }
     }
     
     func showNextQuestionOrResults() {
         previewImage.layer.borderWidth = 0
-        yesButton.isEnabled = true
-        noButton.isEnabled = true
-        
-        if currentQuestionIndex == questionsAmount - 1 {
-            endGame(correctAnswers: correctAnswers)
-            
-        } else {
-            currentQuestionIndex += 1
-            startGame()
-        }
-    }
-}
-
-// MARK: - QuestionFactoryDelegate
-
-extension MovieQuizViewController: QuestionFactoryDelegate {
-    
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question else { return }
-        currentQuestion = question
-        setupGame(with: question)
-    }
-    
-    func didLoadDataFromServer() {
-        activityIndicator.stopAnimating()
-        questionFactory?.requestNextQuestion()
-    }
-    
-    func didFailToLoadData(with error: any Error) {
-        showNetworkError(message: error.localizedDescription)
+        [yesButton, noButton].forEach { $0.isEnabled = true }
     }
 }
 
 // MARK: - Game Preparations
-private extension MovieQuizViewController {
+extension MovieQuizViewController {
     
     func setupGame(with model: QuizQuestion) {
-        counterLabel.text = "\(currentQuestionIndex + 1)/\(questionsAmount)"
-        previewImage.image = UIImage(data: model.image)
-        questionLabel.text = model.questionText
+        let quiz = presenter?.convert(model: model)
+        counterLabel.text = quiz?.questionNumber
+        previewImage.image = quiz?.image
+        questionLabel.text = quiz?.question
     }
 }
 

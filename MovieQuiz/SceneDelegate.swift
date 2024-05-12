@@ -10,9 +10,18 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         options connectionOptions: UIScene.ConnectionOptions
     ) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
+        
+        let vc = MovieQuizViewController()
+        let statisticService = StatisticService()
+        let presenter = MovieQuizPresenter(view: vc, statisticService: statisticService)
+        vc.presenter = presenter
+        
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = MovieQuizViewController()
+        window?.rootViewController = vc
         window?.makeKeyAndVisible()
+//        window = UIWindow(windowScene: windowScene)
+//        window?.rootViewController = MovieQuizViewController()
+//        window?.makeKeyAndVisible()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {}
