@@ -10,8 +10,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         options connectionOptions: UIScene.ConnectionOptions
     ) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
+        
+        let vc = MovieQuizViewController()
+        let presenter = MovieQuizPresenter(view: vc)
+        vc.presenter = presenter
+        
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = MovieQuizViewController()
+        window?.rootViewController = vc
         window?.makeKeyAndVisible()
     }
 

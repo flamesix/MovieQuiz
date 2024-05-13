@@ -18,9 +18,9 @@ final class MQButton: UIButton {
         fatalError("init(coder:) has not been implemented")
     }
     
-    convenience init(title: String) {
+    convenience init(title: String, accessibilityID: String) {
         self.init(frame: .zero)
-        set(title: title)
+        set(title: title, accessibilityID: accessibilityID)
     }
     
     private func configure() {
@@ -31,8 +31,9 @@ final class MQButton: UIButton {
         translatesAutoresizingMaskIntoConstraints = false
     }
     
-    private func set(title: String) {
+    private func set(title: String, accessibilityID: String) {
         setTitle(title, for: .normal)
+        accessibilityIdentifier = accessibilityID
     }
     
 }

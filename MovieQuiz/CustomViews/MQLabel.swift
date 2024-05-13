@@ -18,9 +18,9 @@ final class MQLabel: UILabel {
         fatalError("init(coder:) has not been implemented")
     }
     
-    convenience init(labelText: String, fontSize: CGFloat, alignment: NSTextAlignment, fontStyle: UIFont.YSDisplayType) {
+    convenience init(labelText: String, fontSize: CGFloat, alignment: NSTextAlignment, fontStyle: UIFont.YSDisplayType, _ accessibilityID: String) {
         self.init(frame: .zero)
-        set(labelText: labelText, fontSize: fontSize, alignment: alignment, fontStyle: fontStyle)
+        set(labelText: labelText, fontSize: fontSize, alignment: alignment, fontStyle: fontStyle, accessibilityID: accessibilityID)
     }
     
     private func configure() {
@@ -29,9 +29,10 @@ final class MQLabel: UILabel {
         translatesAutoresizingMaskIntoConstraints = false
     }
     
-    private func set(labelText: String, fontSize: CGFloat, alignment: NSTextAlignment, fontStyle: UIFont.YSDisplayType) {
+    private func set(labelText: String, fontSize: CGFloat, alignment: NSTextAlignment, fontStyle: UIFont.YSDisplayType, accessibilityID: String) {
         text = labelText
         font = UIFont.YSDisplay(fontStyle, size: fontSize)
         textAlignment = alignment
+        accessibilityIdentifier = accessibilityID
     }
 }
